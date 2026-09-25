@@ -2,14 +2,15 @@
 {
     public class Cita : BaseModel
     {
-        public int Id { get; set; }
+        // Relación con Paciente
+        public int PacienteId { get; set; }
+        public virtual Paciente? Paciente { get; set; }
 
-        public string PacienteNombre { get; set; } = string.Empty;
-
-        public string MedicoNombre { get; set; } = string.Empty;
+        // Relación con Medico
+        public int MedicoId { get; set; }
+        public virtual Medico? Medico { get; set; }
 
         public DateTime FechaHora { get; set; }
-
         public string Motivo { get; set; } = string.Empty;
     }
 }
