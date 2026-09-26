@@ -1,7 +1,9 @@
 ﻿using GestionCitas.API.Dto;
 using GestionCitas.API.Interfaces;
 using GestionCitas.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GestionCitas.API.Controllers
 {
@@ -18,7 +20,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpPost]
-        // [Authorize(Roles = "Admin, Usuario")]
+        [Authorize(Roles = "Admin,Medico")]
         public async Task<IActionResult> Create(CitaDto cita)
         {
             // var usuarioLogueado = GetUserId(); -> Pendiente para JWT
@@ -35,6 +37,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpGet("{skip}/{take}")]
+        [Authorize(Roles = "Admin,Medico,Paciente")]
         public async Task<IActionResult> Get(int skip, int take)
         {
             var citas = await _citaRepository.GetAsync(skip, take);
@@ -42,6 +45,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpGet("getById/{id}")]
+        [Authorize(Roles = "Admin,Medico,Paciente")]
         public async Task<IActionResult> GetById(int id)
         {
             // Aquí usamos la magia de tu IBaseRepository para traer las relaciones
@@ -56,6 +60,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             // Esto usa tu borrado físico configurado en BaseRepository
@@ -68,6 +73,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Medico")]
         public async Task<IActionResult> Update(int id, CitaDto cita)
         {
             var existingCita = await _citaRepository.GetById(id);

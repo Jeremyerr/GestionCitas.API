@@ -2,6 +2,7 @@
 using GestionCitas.API.Interfaces;
 using GestionCitas.API.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GestionCitas.API.Controllers
 {
@@ -17,6 +18,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(MedicoDto medico)
         {
             await _medicoRepository.CreateAsync(new Medico()
@@ -31,6 +33,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpGet("{skip}/{take}")]
+        [Authorize(Roles = "Admin,Medico,Paciente")]
         public async Task<IActionResult> Get(int skip, int take)
         {
             var medicos = await _medicoRepository.GetAsync(skip, take);
@@ -38,6 +41,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpGet("getById/{id}")]
+        [Authorize(Roles = "Admin,Medico,Paciente")]
         public async Task<IActionResult> GetById(int id)
         {
             // Traemos los datos del Médico junto con su Especialidad
@@ -52,6 +56,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _medicoRepository.Delete(id);
@@ -60,6 +65,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, MedicoDto medico)
         {
             var existingMedico = await _medicoRepository.GetById(id);

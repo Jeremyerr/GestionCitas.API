@@ -1,6 +1,7 @@
 ﻿using GestionCitas.API.Dto;
 using GestionCitas.API.Models;
 using GestionCitas.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -66,6 +67,27 @@ namespace GestionCitas.API.Controllers
             await _userManager.AddToRoleAsync(applicationUser, "Paciente");
 
             return Ok(new { mensaje = "Usuario creado correctamente" });
+        }
+
+        [HttpPost("register-medico")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RegisterMedico(RegisterDto dto)
+        {
+            var applicationUser = new ApplicationUser
+            {
+                UserName = dto.Username,
+                Email = dto.Email
+            };
+
+            var resultado = await _userManager.CreateAsync(applicationUser, dto.Password);
+            if (!resultado.Succeeded)
+            {
+                return BadRequest(resultado.Errors);
+            }
+
+            await _userManager.AddToRoleAsync(applicationUser, "Medico");
+
+            return Ok(new { mensaje = "Médico creado correctamente" });
         }
     }
 }

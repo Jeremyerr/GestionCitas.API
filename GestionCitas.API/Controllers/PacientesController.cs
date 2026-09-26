@@ -1,7 +1,10 @@
 ﻿using GestionCitas.API.Dto;
 using GestionCitas.API.Interfaces;
 using GestionCitas.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace GestionCitas.API.Controllers
 {
@@ -17,6 +20,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(PacienteDto pacienteDto)
         {
             await _pacienteRepository.CreateAsync(new Paciente()
@@ -32,6 +36,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpGet("{skip}/{take}")]
+        [Authorize(Roles = "Admin,Medico")]
         public async Task<IActionResult> Get(int skip, int take)
         {
             var pacientes = await _pacienteRepository.GetAsync(skip, take);
@@ -39,6 +44,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpGet("getById/{id}")]
+        [Authorize(Roles = "Admin,Medico")]
         public async Task<IActionResult> GetById(int id)
         {
             var paciente = await _pacienteRepository.GetById(id);
@@ -52,6 +58,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _pacienteRepository.Delete(id);
@@ -63,6 +70,7 @@ namespace GestionCitas.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, PacienteDto pacienteDto)
         {
             var existingPaciente = await _pacienteRepository.GetById(id);
