@@ -42,6 +42,12 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "GestionCitas_";
+});
+
 // 5. Configuración de Autenticación JWT
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var signingKey = jwtSection.GetValue<string>("Key");

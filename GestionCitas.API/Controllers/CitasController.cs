@@ -3,28 +3,49 @@ using GestionCitas.API.Interfaces;
 using GestionCitas.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 
 namespace GestionCitas.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize] -> Lo activaremos cuando implementemos JWT
-    public class CitasController : ControllerBase // Luego cambiaremos a CustomBaseController
+    public class CitasController : ControllerBase
     {
         private readonly ICitaRepository _citaRepository;
+        private readonly IMedicoRepository _medicoRepository; // Inyectado para validar horario laboral
 
-        public CitasController(ICitaRepository citaRepository)
+        // Agregamos IMedicoRepository al constructor
+        public CitasController(ICitaRepository citaRepository, IMedicoRepository medicoRepository)
         {
             _citaRepository = citaRepository;
+            _medicoRepository = medicoRepository;
         }
 
         [HttpPost]
         [Authorize(Roles = "Admin,Medico")]
         public async Task<IActionResult> Create(CitaDto cita)
         {
-            // var usuarioLogueado = GetUserId(); -> Pendiente para JWT
+            // 1. Obtener datos del médico para revisar su horario
+            var medico = await _medicoRepository.GetById(cita.MedicoId);
+            if (medico == null)
+            {
+                return NotFound("El médico especificado no existe.");
+            }
 
+            // 2. Validar que la cita esté dentro del horario laboral del médico
+            var horaCita = cita.FechaHora.TimeOfDay;
+            if (horaCita < medico.HoraInicio || horaCita > medico.HoraFin)
+            {
+                return BadRequest($"La cita está fuera del horario laboral del médico. Horario de atención: {medico.HoraInicio} a {medico.HoraFin}");
+            }
+
+            // 3. Validar disponibilidad (citas conflictivas)
+            var existeConflicto = await _citaRepository.ExisteCitaConflictivaAsync(cita.MedicoId, cita.FechaHora);
+            if (existeConflicto)
+            {
+                return BadRequest("El médico ya tiene una cita programada para esa fecha y hora exacta.");
+            }
+
+            // 4. Si pasa las validaciones, creamos la cita
             await _citaRepository.CreateAsync(new Cita()
             {
                 PacienteId = cita.PacienteId,
@@ -48,27 +69,30 @@ namespace GestionCitas.API.Controllers
         [Authorize(Roles = "Admin,Medico,Paciente")]
         public async Task<IActionResult> GetById(int id)
         {
-            // Aquí usamos la magia de tu IBaseRepository para traer las relaciones
             var cita = await _citaRepository.GetById(id, c => c.Paciente, c => c.Medico);
-
-            if (cita == null)
-            {
-                return NotFound();
-            }
-
+            if (cita == null) return NotFound();
             return Ok(cita);
+        }
+
+        // NUEVO: Endpoint Historial de Paciente
+        [HttpGet("historial/{pacienteId}")]
+        [Authorize(Roles = "Admin,Medico,Paciente")]
+        public async Task<IActionResult> GetHistorialPaciente(int pacienteId)
+        {
+            var historial = await _citaRepository.GetHistorialPacienteAsync(pacienteId);
+            if (historial == null || !historial.Any())
+            {
+                return NotFound("No se encontraron citas para este paciente.");
+            }
+            return Ok(historial);
         }
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            // Esto usa tu borrado físico configurado en BaseRepository
             var result = await _citaRepository.Delete(id);
-            if (!result)
-            {
-                return NotFound();
-            }
+            if (!result) return NotFound();
             return Ok();
         }
 
@@ -77,12 +101,9 @@ namespace GestionCitas.API.Controllers
         public async Task<IActionResult> Update(int id, CitaDto cita)
         {
             var existingCita = await _citaRepository.GetById(id);
-            if (existingCita == null)
-            {
-                return NotFound();
-            }
+            if (existingCita == null) return NotFound();
 
-            // Actualizar las propiedades de la entidad
+            // Nota: Aquí también podrías llamar a las validaciones de horario antes de actualizar.
             existingCita.PacienteId = cita.PacienteId;
             existingCita.MedicoId = cita.MedicoId;
             existingCita.FechaHora = cita.FechaHora;
